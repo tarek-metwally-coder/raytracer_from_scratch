@@ -1,10 +1,10 @@
 import { AppState, getCurrentState, switchState, onStateChange } from "./core/state-manager.js";
-import { Sphere } from "./scene-objects/sphere.js";
-import { Plane } from "./scene-objects/plane.js";
+import { Sphere } from "./scene/objects/sphere.js";
+import { Plane } from "./scene/objects/plane.js";
 import { Camera } from "./camera/camera.js";
 import { CameraController } from "./camera/camera-controller.js";
 import { getRenderer } from "./renderer/index.js";
-
+import { Scene } from "./scene/scene.js";
 
 
 // Initialize the app state
@@ -21,6 +21,7 @@ onStateChange((newState, oldState) => {
     if (newState === AppState.FIRST_PERSON) {
         canvas.style.display = 'block'; // Show the canvas
         enterFirstPersonMode(); // Enter first-person mode
+        document.getElementById('debug-overlay').textContent = `State: ${newState}`;
     }
 
     if (oldState === AppState.INTRO) {
@@ -29,6 +30,7 @@ onStateChange((newState, oldState) => {
 
     if (newState === AppState.INTRO) {
         console.log('Entering INTRO state');
+        document.getElementById('debug-overlay').textContent = `State: ${newState}`;
         // Here you can add logic to display the intro screen
     }
 
@@ -39,6 +41,7 @@ onStateChange((newState, oldState) => {
     if (newState === AppState.TOP_DOWN) {
         console.log('Entering TOP_DOWN state');
         // Here you can add logic to switch to top-down view
+        document.getElementById('debug-overlay').textContent = `State: ${newState}`;
     }
 
 });
@@ -53,8 +56,8 @@ window.addEventListener('keydown', (e) => {
 
 // Create the main canvas, and camera and descripe the scene then call the renderer
 const canvas = document.createElement('canvas');
-canvas.width = 1080; // Set canvas width
-canvas.height = 720; // Set canvas height
+canvas.width = 800; // Set canvas width
+canvas.height = 600; // Set canvas height
 document.body.appendChild(canvas);
 const ctx = canvas.getContext('2d');
 
@@ -69,35 +72,22 @@ lowResCtx.imageSmoothingEnabled = false;
 canvas.style.imageRendering = 'pixelated';
 
 // scene
-const sceneObjects = [
-    new Sphere([0, -1, 3], 1, [255, 0, 0], 500, 0.2), // Red sphere shiny
-    new Sphere([-2, 0, 4], 1, [0, 0, 255], 500, 0.3), // Green sphere shiny
-    new Sphere([2, 0, 4], 1, [0, 255, 0], 10, 0.4), // Blue sphere somewhat shiny
-    new Sphere([0, 0, -3], 1, [255, 0, 255], 10, 0.5), // Yellow sphere very shiny
-    // new Sphere([0, -5001, 0], 5000, [255, 255, 0], 1000, 0.5), // Yellow sphere very shiny
+const scene = new Scene();
 
-    new Plane([0, -1, 0], [0, 1, 0], [255, 255, 0], 1000, 0.5), // acts as floor just to test will remove later
-    new Plane([0, 0, 10], [0, 0, -1], [200, 200, 225], 300, 0.1), // Blue plane faces camera
+scene.addObject(new Sphere({ center: [0, -1, 3], radius: 1, color: [255, 0, 0], specular: 500, reflective: 0.2 })); // Red sphere shiny
+scene.addObject(new Sphere({ center: [-2, 0, 4], radius: 1, color: [0, 0, 255], specular: 500, reflective: 0.3 })); // Green sphere shiny
+scene.addObject(new Sphere({ center: [2, 0, 4], radius: 1, color: [0, 255, 0], specular: 10, reflective: 0.4 })); // Blue sphere somewhat shiny
+scene.addObject(new Sphere({ center: [0, 0, -3], radius: 1, color: [255, 0, 255], specular: 10, reflective: 0.5 })); // Yellow sphere very shiny
+// scene.addObject(new Sphere({ center: [0, -5001, 0], radius: 5000, color: [255, 255, 0], specular: 1000, reflective: 0.5 })); // Yellow sphere very shiny
+scene.addObject(new Plane({ point: [0, -1, 0], normal: [0, 1, 0], color: [255, 255, 0], specular: 1000, reflective: 0.5 })); // acts as floor just to test will remove later
+scene.addObject(new Plane({ point: [0, 0, 10], normal: [0, 0, -1], color: [200, 200, 225], specular: 300, reflective: 0.1 })); // Blue plane faces camera
 
-];
+scene.addlight({ type: 'ambient', intensity: 0.2 });
+scene.addlight({ type: 'point', intensity: 0.6, position: [2, 1, 0] });
+scene.addlight({ type: 'directional', intensity: 0.2, direction: [1, 4, 4] });
+const sceneObjects = scene.getConfig().scene;
 
-const lights = [
-    {
-        type: 'ambient',
-        intensity: 0.2,
-    },
-    {
-        type: 'point',
-        intensity: 0.6,
-        position: [2, 1, 0]
-    },
-    {
-        type: 'directional',
-        intensity: 0.2,
-        direction: [1, 4, 4]
-    }
-
-]
+const lights = scene.getConfig().lights;
 
 const config = {
     width: lowResCanvas.width,
@@ -107,11 +97,11 @@ const config = {
     scene: sceneObjects,
 };
 
-const renderer = getRenderer("raytracer"); 
+const renderer = getRenderer("raytracer");
 
-const camera = new Camera(); 
+const camera = new Camera();
 
-const cameraController = new CameraController(camera, canvas); 
+const cameraController = new CameraController(camera, canvas);
 let running = false; // Flag to control the rendering loop
 let loopId = null;
 
@@ -121,14 +111,12 @@ function loop() {
     //handle input
     cameraController.update();
 
-    const R = camera.getRotationMatrix();
-    const position = camera.getPosition();
 
     lowResCtx.clearRect(0, 0, lowResCanvas.width, lowResCanvas.height);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     renderer(camera, lowResCtx, config);
-//   we draw on the action canvas what the lower canvas has cause i render on low res then shove to high res and make it pixelated 
-//  for now untill i figure out a better way of doing this i guess i can hand it to renderer and make it take two canvases lowres + highres. 
+    //   we draw on the action canvas what the lower canvas has cause i render on low res then shove to high res and make it pixelated 
+    //  for now untill i figure out a better way of doing this i guess i can hand it to renderer and make it take two canvases lowres + highres. 
     ctx.drawImage(lowResCanvas, 0, 0, canvas.width, canvas.height);
     requestAnimationFrame(loop); // Request the next frame
 

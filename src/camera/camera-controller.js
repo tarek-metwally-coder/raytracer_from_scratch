@@ -59,13 +59,13 @@ export class CameraController { // first person
         if (!this._isPointerLocked) return;
 
         const { movementX, movementY } = e;
-        const newYaw = this.camera.getYaw() + movementX * this.mouseSensitivity;;
-        const newPitch = this.camera.getPitch() + movementY * this.mouseSensitivity;
+        const newYaw = this.camera.yaw + movementX * this.mouseSensitivity;;
+        const newPitch = this.camera.pitch + movementY * this.mouseSensitivity;
 
         const maxPitch = Math.PI / 2 - 0.01; // Prevent flipping
         const newPitchClamped = Math.max(-maxPitch, Math.min(maxPitch, newPitch));
-        this.camera.setYaw(newYaw);
-        this.camera.setPitch(newPitchClamped);
+        this.camera.yaw = newYaw;
+        this.camera.pitch = newPitchClamped;
     }
 
     update() {
@@ -75,17 +75,25 @@ export class CameraController { // first person
         let dx = 0, dy = 0, dz = 0;
 
         if (this.keysPressed.has('w')) {
-            dx += forward[0]; dy += forward[1]; dz += forward[2];
+            dx += forward[0]; dz += forward[2];
         }
         if (this.keysPressed.has('s')) {
-            dx -= forward[0]; dy -= forward[1]; dz -= forward[2];
+            dx -= forward[0]; dz -= forward[2];
         }
         if (this.keysPressed.has('a')) {
-            dx -= right[0]; dy -= right[1]; dz -= right[2];
+            dx -= right[0]; dz -= right[2];
         }
         if (this.keysPressed.has('d')) {
-            dx += right[0]; dy += right[1]; dz += right[2];
+            dx += right[0]; dz += right[2];
         }
+
+        if (this.keysPressed.has(' ')) { // Space for up (Y+)
+            dy += 1;
+        }
+        if (this.keysPressed.has('shift')) { // Shift for down (Y-)
+            dy -= 1;
+        }
+
         const movementVec = MathUtils.normalize3([dx, dy, dz]);
         this.camera.moveBy(movementVec[0] * speed, movementVec[1] * speed, movementVec[2] * speed);
     }

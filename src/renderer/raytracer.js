@@ -5,10 +5,10 @@ export function renderRaytracedScene(camera, ctx, config) {
     const { width, height, recursionDepth, lights, scene } = config;
 
     const R = camera.getRotationMatrix();
-    const O = camera.getPosition();
-    const viewportHeight = camera.getViewportHeight();
-    const viewportWidth = camera.getViewportWidth();
-    const viewportDistance = camera.getViewportDistance();
+    const O = camera.position;
+    const viewportHeight = camera.viewportHeight
+    const viewportWidth = camera.viewportWidth;
+    const viewportDistance = camera.viewportDistance;
 
     for (let x = -(width / 2); x < (width / 2); x++) {
         for (let y = -(height / 2); y < (height / 2); y++) {

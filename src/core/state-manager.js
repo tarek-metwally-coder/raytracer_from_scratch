@@ -1,8 +1,8 @@
-export const AppState = {
+export const AppState = Object.freeze({
     INTRO: 'intro',
     TOP_DOWN: 'topDown',
     FIRST_PERSON: 'firstPerson',
-};
+});
 
 
 let currentState = AppState.INTRO;
