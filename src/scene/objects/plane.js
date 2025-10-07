@@ -1,8 +1,8 @@
 import { SceneObject } from "./base-object.js";
-import { MathUtils } from "../utils/math-utils.js";
+import { MathUtils } from "../../utils/math-utils.js";
 
 export class Plane extends SceneObject{
-    constructor(point, normal, color, specular, reflective) {
+    constructor({ point = [0,0,0], normal = [0,1,0], color = [255,255,255], specular = 50, reflective = 0.3 } = {}) {
         super();
         this.point = point; // Point on the plane
         this.normal = normal; // Normal vector of the plane

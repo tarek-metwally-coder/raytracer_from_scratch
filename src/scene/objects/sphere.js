@@ -1,8 +1,8 @@
-import { MathUtils } from "../utils/math-utils.js";
+import { MathUtils } from "../../utils/math-utils.js";
 import { SceneObject } from "./base-object.js";
 
 export class Sphere extends SceneObject {
-    constructor(center, radius, color, specular, reflective) {
+    constructor({ center = [0,0,0], radius = 1, color = [255,255,255], specular = 50, reflective = 0.3 } = {}) {
         super();
         this.center = center; // Sphere center
         this.radius = radius; // Sphere radius
