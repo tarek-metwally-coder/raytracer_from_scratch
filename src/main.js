@@ -99,15 +99,28 @@ const config = {
 
 const renderer = getRenderer("raytracer");
 
-const camera = new Camera();
+const camera = new Camera(); // Increased movement speed for better navigation});
 
 const cameraController = new CameraController(camera, canvas);
 let running = false; // Flag to control the rendering loop
 let loopId = null;
 
+// frame rate caluclation
+let lastTime = performance.now();
+let frameTimes = [];
+const debugoverlay = document.getElementById('debug-overlay');
+
 function loop() {
     if (!running) return;
-
+    const now = performance.now();
+    const deltaTime = now - lastTime;
+    lastTime = now;
+    frameTimes.push(deltaTime);
+    if (frameTimes.length > 60) {
+        frameTimes.shift();
+    }
+    const avgDelta = frameTimes.reduce((a, b) => a + b) / frameTimes.length;
+    const fps = (1000 / avgDelta).toFixed(1);
     //handle input
     cameraController.update();
 
@@ -118,11 +131,11 @@ function loop() {
     //   we draw on the action canvas what the lower canvas has cause i render on low res then shove to high res and make it pixelated 
     //  for now untill i figure out a better way of doing this i guess i can hand it to renderer and make it take two canvases lowres + highres. 
     ctx.drawImage(lowResCanvas, 0, 0, canvas.width, canvas.height);
+    debugoverlay.textContent = `state: ${getCurrentState()} | FPS: ${fps}`;
+    
     requestAnimationFrame(loop); // Request the next frame
 
 }
-
-
 
 function enterFirstPersonMode() {
     cameraController.enable(); // Enable camera controller for first-person mode

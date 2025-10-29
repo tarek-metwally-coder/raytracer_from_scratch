@@ -1,17 +1,18 @@
 import { SceneObject } from "./base-object.js";
 import { MathUtils } from "../../utils/math-utils.js";
 
-export class Plane extends SceneObject{
-    constructor({ point = [0,0,0], normal = [0,1,0], color = [255,255,255], specular = 50, reflective = 0.3 } = {}) {
+export class Plane extends SceneObject {
+    constructor({ point = [0, 0, 0], normal = [0, 1, 0], color = [255, 255, 255], specular = 50, reflective = 0.3 } = {}) {
         super();
         this.point = point; // Point on the plane
         this.normal = normal; // Normal vector of the plane
         this.color = color; // Plane color
         this.specular = specular; // Specular reflection coefficient
         this.reflective = reflective; // Reflective coefficient
+        this.bbox = this.getBoundingBox();
     }
 
-    intersect(rayOrigin, rayDirection){
+    intersect(rayOrigin, rayDirection) {
         const denominator = MathUtils.dot(this.normal, rayDirection);
         if (Math.abs(denominator) < 1e-6) return [Infinity, Infinity]; // Ray is parallel to the plane
 
@@ -28,4 +29,6 @@ export class Plane extends SceneObject{
     getNormal(_) {
         return this.normal; // The normal is constant for a plane
     }
+
+    getBoundingBox() { return null; }
 }

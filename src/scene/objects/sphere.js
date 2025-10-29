@@ -2,13 +2,14 @@ import { MathUtils } from "../../utils/math-utils.js";
 import { SceneObject } from "./base-object.js";
 
 export class Sphere extends SceneObject {
-    constructor({ center = [0,0,0], radius = 1, color = [255,255,255], specular = 50, reflective = 0.3 } = {}) {
+    constructor({ center = [0, 0, 0], radius = 1, color = [255, 255, 255], specular = 50, reflective = 0.3 } = {}) {
         super();
         this.center = center; // Sphere center
         this.radius = radius; // Sphere radius
         this.color = color; // Sphere color
         this.specular = specular; // Specular reflection coefficient
         this.reflective = reflective; // Reflective coefficient
+        this.bbox = this.getBoundingBox();
     }
 
     intersect(rayOrigin, rayDirection) {
@@ -38,5 +39,21 @@ export class Sphere extends SceneObject {
             N[1] / length,
             N[2] / length
         ]; // Normalize the normal vector
+    }
+    getBoundingBox() {
+        return {
+            min: {
+                x: this.center[0] - this.radius,
+                y: this.center[1] - this.radius,
+                z: this.center[2] - this.radius
+
+            },
+            max: {
+                x: this.center[0] + this.radius,
+                y: this.center[1] + this.radius,
+                z: this.center[2] + this.radius
+
+            }
+        };
     }
 }

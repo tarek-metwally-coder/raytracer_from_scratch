@@ -5,4 +5,7 @@ export class SceneObject {
     getNormal(point) {
         throw new Error("Method 'getNormal' must be implemented in derived classes.");
     }
+    getBoundingBox() {
+        throw new Error("Method 'getBoundingBox' must be implemented in derived classes.");
+    }
 }
