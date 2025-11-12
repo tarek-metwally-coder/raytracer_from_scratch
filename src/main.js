@@ -85,16 +85,19 @@ scene.addObject(new Plane({ point: [0, 0, 10], normal: [0, 0, -1], color: [200, 
 scene.addlight({ type: 'ambient', intensity: 0.2 });
 scene.addlight({ type: 'point', intensity: 0.6, position: [2, 1, 0] });
 scene.addlight({ type: 'directional', intensity: 0.2, direction: [1, 4, 4] });
-const sceneObjects = scene.getConfig().scene;
+scene.buildBVH(2); // build the bvh with max 2 objects per node
+const sceneConfig = scene.getConfig();
 
-const lights = scene.getConfig().lights;
 
 const config = {
     width: lowResCanvas.width,
     height: lowResCanvas.height,
     recursionDepth: 3,
-    lights: lights,
-    scene: sceneObjects,
+    lights: sceneConfig.lights,
+    scene: sceneConfig.scene,
+    bvhRoot: sceneConfig.bvhRoot,
+    normalObjects: sceneConfig.normalObjects,
+    infiniteObjects: sceneConfig.infiniteObjects
 };
 
 const renderer = getRenderer("raytracer");
@@ -132,7 +135,7 @@ function loop() {
     //  for now untill i figure out a better way of doing this i guess i can hand it to renderer and make it take two canvases lowres + highres. 
     ctx.drawImage(lowResCanvas, 0, 0, canvas.width, canvas.height);
     debugoverlay.textContent = `state: ${getCurrentState()} | FPS: ${fps}`;
-    
+
     requestAnimationFrame(loop); // Request the next frame
 
 }

@@ -1,8 +1,9 @@
 import { MathUtils } from "../utils/math-utils.js";
 import { ViewportUtils } from "../utils/viewport-utils.js";
+import { intersectRayBVH } from "../acceleration/bvh.js";
 
 export function renderRaytracedScene(camera, ctx, config) {
-    const { width, height, recursionDepth, lights, scene } = config;
+    const { width, height, recursionDepth, lights, scene, bvhRoot, normalObjects, infiniteObjects } = config;
 
     const R = camera.getRotationMatrix();
     const O = camera.position;
@@ -14,7 +15,7 @@ export function renderRaytracedScene(camera, ctx, config) {
         for (let y = -(height / 2); y < (height / 2); y++) {
             const D = ViewportUtils.canvasToViewPort(x, y, height, width, viewportHeight, viewportWidth, viewportDistance); // Convert canvas coordinates to viewport coordinates
             const rotated_D = MathUtils.rotateVector(D, R); // Rotate the direction vector
-            const color = TraceRay(O, rotated_D, 1, Infinity, recursionDepth, lights, scene);
+            const color = TraceRay(O, rotated_D, 1, Infinity, recursionDepth, lights, bvhRoot, normalObjects, infiniteObjects); // Trace the ray and get the color
             ctx.fillStyle = `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
             // Adjust coordinates to center the origin
             ctx.fillRect(x + width / 2, height / 2 - y, 1, 1);
@@ -24,9 +25,24 @@ export function renderRaytracedScene(camera, ctx, config) {
 }
 
 
-function TraceRay(O, D, t_min, t_max, recursion_depth, lights, scene) {
+function TraceRay(O, D, t_min, t_max, recursion_depth, lights, bvhRoot, normalObjects, infiniteObjects) {
 
-    const [closest_obj, closest_t] = ClosestIntersection(O, D, t_min, t_max, scene);
+    const [objectBVH, tBVH] = intersectRayBVH(O, D, t_min, t_max, bvhRoot);
+    const [objectInf, tInf] = ClosestIntersection(O, D, t_min, t_max, infiniteObjects);
+
+    let closest_obj = null;
+    let closest_t = Infinity;
+
+    if (tBVH < closest_t) {
+        closest_t = tBVH;
+        closest_obj = objectBVH;
+    }
+    if (tInf < closest_t) {
+        closest_t = tInf;
+        closest_obj = objectInf;
+    }
+
+    // const [closest_obj, closest_t] = ClosestIntersection(O, D, t_min, t_max, scene);
 
     if (closest_obj === null) {
         return [0, 0, 0]; // Background color
@@ -34,7 +50,7 @@ function TraceRay(O, D, t_min, t_max, recursion_depth, lights, scene) {
 
     const P = [O[0] + closest_t * D[0], O[1] + closest_t * D[1], O[2] + closest_t * D[2]]; // Intersection point
     const N = closest_obj.getNormal(P); // Normal at the intersection point
-    const lighting = ComputeLighting(P, N, [D[0] * -1, D[1] * -1, D[2] * -1], closest_obj.specular, lights, scene); // Compute lighting
+    const lighting = ComputeLighting(P, N, [D[0] * -1, D[1] * -1, D[2] * -1], closest_obj.specular, lights, infiniteObjects, bvhRoot); // Compute lighting
     const local_color = [
         closest_obj.color[0] * lighting,
         closest_obj.color[1] * lighting,
@@ -49,7 +65,7 @@ function TraceRay(O, D, t_min, t_max, recursion_depth, lights, scene) {
     }
 
     const R = MathUtils.reflectRay([D[0] * -1, D[1] * -1, D[2] * -1], N); // Reflect the ray
-    const reflected_color = TraceRay(P, R, 0.001, Infinity, recursion_depth - 1, lights, scene); // Trace the reflected ray
+    const reflected_color = TraceRay(P, R, 0.001, Infinity, recursion_depth - 1, lights, bvhRoot, normalObjects, infiniteObjects); // Trace the reflected ray
     return [
         local_color[0] * (1 - r) + reflected_color[0] * r,
         local_color[1] * (1 - r) + reflected_color[1] * r,
@@ -73,50 +89,66 @@ function ClosestIntersection(O, D, t_min, t_max, scene) {
         }
     }
 
-    return [closest_obj, closest_t]
+    return [closest_obj, closest_t];
 
 
 }
 
-function ComputeLighting(P, N, V, s, lights, scene) {
-    let i = 0.0
+function ComputeLighting(P, N, V, s, lights, infiniteObjects, bvhRoot) {
+    let i = 0.0;
     for (const light of lights) {
         if (light.type === 'ambient') {
-            i += light.intensity
+            i += light.intensity;
         }
         else {
-            let L = 0
-            let t_max
+            let L = 0;
+            let t_max;
             if (light.type === 'point') {
-                L = [light.position[0] - P[0], light.position[1] - P[1], light.position[2] - P[2]]
-                t_max = 1
+                L = [light.position[0] - P[0], light.position[1] - P[1], light.position[2] - P[2]];
+                const distToLight = MathUtils.length(L);
+                t_max = distToLight;
             }
             else if (light.type === 'directional') {
-                L = [light.direction[0], light.direction[1], light.direction[2]]
-                t_max = Infinity
+                L = [light.direction[0], light.direction[1], light.direction[2]];
+                t_max = Infinity;
             }
             // shadow check
-            const [shadow_sphere, shadow_t] = ClosestIntersection(P, L, 0.001, t_max, scene)
+
+
+            L = MathUtils.normalize3(L);
+            const [shadow_obj_BVH, shadow_t_BVH] = intersectRayBVH(P, L, 0.001, t_max, bvhRoot);
+            const [shadow_obj_inf, shadow_t_inf] = ClosestIntersection(P, L, 0.001, t_max, infiniteObjects);
+
+            let shadow_t = Infinity
+            let shadow_sphere = null;
+            if (shadow_t_BVH < shadow_t) {
+                shadow_t = shadow_t_BVH;
+                shadow_sphere = shadow_obj_BVH;
+            }
+            if (shadow_t_inf < shadow_t) {
+                shadow_t = shadow_t_inf;
+                shadow_sphere = shadow_obj_inf;
+            }
             if (shadow_sphere) {
                 continue // Skip this light if there's a shadow
             }
 
             // diffuse
-            const N_dot_L = MathUtils.dot(N, L)
+            const N_dot_L = MathUtils.dot(N, L);
             if (N_dot_L > 0) {
-                i += light.intensity * N_dot_L / (MathUtils.length(N) * MathUtils.length(L))
+                i += light.intensity * N_dot_L;
             }
 
             // specular
             if (s != -1) {
-                const R = MathUtils.reflectRay(L, N) // Reflect the light direction
-                const V_dot_R = MathUtils.dot(V, R)
+                const R = MathUtils.reflectRay(L, N);// Reflect the light direction
+                const V_dot_R = MathUtils.dot(V, R);
                 if (V_dot_R > 0) {
-                    i += light.intensity * Math.pow(V_dot_R / (MathUtils.length(V) * MathUtils.length(R)), s)
+                    i += light.intensity * Math.pow(V_dot_R / (MathUtils.length(V) * MathUtils.length(R)), s);
                 }
             }
         }
 
     }
-    return i
+    return Math.min(i, 1);
 }

@@ -68,7 +68,7 @@ export function intersectRayBVH(O, D, t_min, t_max, bvhNode) {
 
     // early exit if ray doesn't intersect bounding box
     if (!intersectRayABB(O, D, bvhNode.bbox, t_min, t_max)) {
-        return [null, infinity];
+        return [null, Infinity];
     }
     // leaf check each object
     if (bvhNode.isLeaf()) {
@@ -103,24 +103,24 @@ export function visualizeBVH() {
 }
 
 export function computeBoundingboxForSceneObjects(objects) {
-    if (objects.length === 0) return null;
-    let bbox = objects[0].bbox;
-    for (let i = 1; i < objects.length; i++) {
-        bbox = mergeBoundingBoxes(bbox, objects[i].bbox);
+    let bbox = null;
+    for (const  obj of objects) {
+        if (!obj.bbox) continue; // skip objects without bounding box ex planes
+        bbox = bbox ? mergeBoundingBoxes(bbox, obj.bbox) : obj.bbox;
     }
     return bbox;
 }
 
 function intersectRayABB(O, D, bbox, t_min, t_max) {
     const axes = ['x', 'y', 'z'];
-    for (let i =0; i < 3; i++) {
+    for (let i = 0; i < 3; i++) {
         const axis = axes[i];
         const invD = 1 / D[i];
         let t0 = (bbox.min[axis] - O[i]) * invD;
         let t1 = (bbox.max[axis] - O[i]) * invD;
-        
+
         if (t0 > t1) [t0, t1] = [t1, t0]; // swap
-    
+
         t_min = Math.max(t_min, t0);
         t_max = Math.min(t_max, t1);
 
