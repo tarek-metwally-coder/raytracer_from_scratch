@@ -7,6 +7,27 @@ import { getRenderer } from "./renderer/index.js";
 import { Scene } from "./scene/scene.js";
 
 
+
+// Navigation between states 
+
+// Create  helkper functions maybe that show the div 
+function goToIntro()  {
+    // here we check of onstate change will handle switching or if i have to manually handle it here.
+    switchState(AppState.INTRO);
+
+};
+
+// helper to show/hide divs
+function showDiv(id) {
+    // Hide all divs in body
+    document.querySelectorAll('body > div').forEach(div => 
+        div.classList.add('hidden'));
+    
+    document.getElementById(id).classList.remove('hidden');
+}
+
+
+
 // Initialize the app state
 console.log('App starting in state:', getCurrentState());
 

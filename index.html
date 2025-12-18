@@ -8,12 +8,18 @@
 </head>
 
 <body>
-    <div id="debug-overlay" style="position:fixed;top:10px;left:10px;
+    <div id="intro-page"></div>
+    <div id="editor-page" class="hidden"></div>
+    <div id="fps-page" class="hidden">
+        <div id="debug-overlay" style="position:fixed;top:10px;left:10px;
             background:rgba(0,0,0,0.6);color:white;
             padding:6px 10px;border-radius:6px;
             font-family:monospace;z-index:1000;">
-        State: intro
+            State: intro
+        </div>
     </div>
+
+
 
     <script type="module" src="src/main.js"></script>
 </body>
