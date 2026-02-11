@@ -19,7 +19,9 @@ export class CameraController { // first person
     }
 
     _addEventListeners() {
-        document.addEventListener('mousemove', this._onMouseMove);
+        this.canvas.addEventListener('mousemove', this._onMouseMove);
+        this.canvas.addEventListener('click', this._requestPointerLock);
+
         document.addEventListener('keydown', this._onKeyDown);
         document.addEventListener('keyup', this._onKeyUp);
         document.addEventListener('pointerlockchange', this._onPointerLockChange);
@@ -27,10 +29,12 @@ export class CameraController { // first person
     }
 
     _removeEventListeners() {
-        document.removeEventListener('mousemove', this._onMouseMove);
+        this.canvas.removeEventListener('mousemove', this._onMouseMove);
         document.removeEventListener('keydown', this._onKeyDown);
         document.removeEventListener('keyup', this._onKeyUp);
         document.removeEventListener('pointerlockchange', this._onPointerLockChange);
+        this.canvas.removeEventListener('click', this._requestPointerLock);
+
     }
 
     _requestPointerLock() {
@@ -101,12 +105,11 @@ export class CameraController { // first person
     enable() {
         this._addEventListeners();
 
-        this.canvas.addEventListener('click', this._requestPointerLock);
     }
 
     disable() {
+        this.keysPressed.clear();
         this._removeEventListeners();
         document.exitPointerLock();
-        this.canvas.removeEventListener('click', this._requestPointerLock);
     }
 }
