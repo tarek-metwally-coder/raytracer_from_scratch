@@ -6,6 +6,7 @@ export class CameraController { // first person
         this.canvas = canvas;
 
         this.mouseSensitivity = 0.002;
+        this._lockPending = false;
         this._isPointerLocked = false;
 
         this.keysPressed = new Set();
@@ -20,7 +21,7 @@ export class CameraController { // first person
 
     _addEventListeners() {
         this.canvas.addEventListener('mousemove', this._onMouseMove);
-        this.canvas.addEventListener('click', this._requestPointerLock);
+        this.canvas.addEventListener('click', () => { this._requestPointerLock(); });
 
         document.addEventListener('keydown', this._onKeyDown);
         document.addEventListener('keyup', this._onKeyUp);
@@ -40,12 +41,14 @@ export class CameraController { // first person
     _requestPointerLock() {
         console.log("Canvas clicked: requesting pointer lock");
         if (!this._isPointerLocked) {
+            this._lockPending = true;
             this.canvas.requestPointerLock();
         }
     }
 
     _onPointerLockChange() {
         this._isPointerLocked = document.pointerLockElement === this.canvas;
+        this._lockPending = false;
     }
 
     _onKeyDown(e) {
@@ -60,7 +63,7 @@ export class CameraController { // first person
     }
 
     _onMouseMove(e) {
-        if (!this._isPointerLocked) return;
+        if (!this._isPointerLocked || this._lockPending) return;
 
         const { movementX, movementY } = e;
         const newYaw = this.camera.yaw + movementX * this.mouseSensitivity;;
@@ -100,7 +103,12 @@ export class CameraController { // first person
 
         const movementVec = MathUtils.normalize3([dx, dy, dz]);
         this.camera.moveBy(movementVec[0] * speed, movementVec[1] * speed, movementVec[2] * speed);
+        // Prevent camera from going below ground level (y = 0)
+        if (this.camera.position[1] < 0.5) {
+            this.camera.position[1] = 0.5;
+        }
     }
+
 
     enable() {
         this._addEventListeners();
@@ -110,6 +118,11 @@ export class CameraController { // first person
     disable() {
         this.keysPressed.clear();
         this._removeEventListeners();
-        document.exitPointerLock();
+        this._isPointerLocked = false;
+
+        if (document.pointerLockElement === this.canvas) {
+
+            document.exitPointerLock();
+        }
     }
 }
